@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admin — Absensi Karyawan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F7F3; --card:#FFFFFF; --ink:#1C2321; --muted:#767F76;
+    --line:#E4E7DF; --forest:#2F5233; --forest-dark:#22401A;
+    --error:#B3432B; --radius:16px;
+    --shadow:0 1px 2px rgba(28,35,33,.04), 0 8px 24px rgba(28,35,33,.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Inter',sans-serif; background:var(--paper); color:var(--ink);
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);}
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 24px; border-bottom:1px solid var(--line); background:var(--card);
+    position:sticky; top:0; z-index:5;
+  }
+  .topbar h1{font-family:'Fraunces',serif; font-size:20px; font-weight:600; margin:0;}
+  .wrap{max-width:1180px; margin:0 auto; padding:24px;}
+
+  /* Login gate */
+  #loginGate{display:flex; align-items:center; justify-content:center; min-height:80vh;}
+  .login-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:32px; width:100%; max-width:360px; text-align:center;}
+  .login-card h2{font-family:'Fraunces',serif; margin:0 0 6px;}
+  .login-card p{color:var(--muted); font-size:14px; margin:0 0 20px;}
+  .login-card input{width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line);
+    font-size:15px; margin-bottom:12px; font-family:inherit;}
+  .login-card button{width:100%; padding:12px; border-radius:10px; border:none; background:var(--forest);
+    color:#fff; font-weight:600; font-size:15px; cursor:pointer;}
+  .login-err{color:var(--error); font-size:13px; min-height:16px; margin-top:8px;}
+
+  #dashboard{display:none;}
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin-bottom:20px;}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px;}
+  .stat .n{font-size:26px; font-weight:700; color:var(--forest-dark); font-family:'Fraunces',serif;}
+  .stat .l{font-size:13px; color:var(--muted); margin-top:2px;}
+
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; align-items:center;}
+  .toolbar input, .toolbar select{
+    padding:10px 12px; border-radius:10px; border:1px solid var(--line); font-family:inherit; font-size:14px;
+    background:var(--card);
+  }
+  .toolbar input[type=text]{flex:1; min-width:160px;}
+  .toolbar button{padding:10px 16px; border-radius:10px; border:1px solid var(--line); background:var(--card);
+    font-family:inherit; font-weight:600; font-size:14px; cursor:pointer; color:var(--ink);}
+  .toolbar button.primary{background:var(--forest); color:#fff; border-color:var(--forest);}
+
+  .table-wrap{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:auto;
+    box-shadow:var(--shadow);}
+  table{width:100%; border-collapse:collapse; min-width:820px;}
+  th, td{padding:12px 14px; text-align:left; font-size:14px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  th{color:var(--muted); font-weight:600; font-size:12.5px;}
+  tr:last-child td{border-bottom:none;}
+  .thumb{width:44px; height:44px; border-radius:8px; object-fit:cover; cursor:pointer;}
+  .badge{padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600;}
+  .badge.in{background:#E4EFE1; color:var(--forest-dark);}
+  .badge.out{background:#F1E6DD; color:#8A4A22;}
+  .time-input{border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-family:inherit; font-size:13.5px; width:100px;}
+  .icon-btn{border:none; background:none; cursor:pointer; color:var(--muted); font-size:13px; text-decoration:underline;}
+  .icon-btn.danger{color:var(--error);}
+  .empty{padding:60px 20px; text-align:center; color:var(--muted);}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(20,23,20,.5); display:none; align-items:center; justify-content:center; z-index:20; padding:20px;}
+  .modal-bg.show{display:flex;}
+  .modal{background:var(--card); border-radius:16px; padding:16px; max-width:480px; width:100%;}
+  .modal img{width:100%; border-radius:10px; display:block;}
+  .modal .close{text-align:right; margin-top:10px;}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#141713; --card:#1D211C; --ink:#EDEFE8; --muted:#94998F; --line:#2B2F29;
+      --forest:#5C9A5E; --forest-dark:#8FCB8E;
+    }
+    .toolbar input, .toolbar select, .time-input{background:#181B16; color:var(--ink);}
+    .toolbar button{color:var(--ink);}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginGate">
+  <div class="login-card">
+    <h2>Admin</h2>
+    <p>Masuk untuk mengelola data absensi karyawan.</p>
+    <input type="password" id="pwInput" placeholder="Kata sandi admin">
+    <button id="btnLogin">Masuk</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="topbar">
+    <h1>Dashboard Absensi</h1>
+    <button class="icon-btn" id="btnLogout">Keluar</button>
+  </div>
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat"><div class="n" id="statToday">–</div><div class="l">Absen hari ini</div></div>
+      <div class="stat"><div class="n" id="statIn">–</div><div class="l">Masuk hari ini</div></div>
+      <div class="stat"><div class="n" id="statOut">–</div><div class="l">Pulang hari ini</div></div>
+      <div class="stat"><div class="n" id="statTotal">–</div><div class="l">Total data</div></div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="Cari nama atau ID...">
+      <input type="date" id="filterDate">
+      <select id="filterType">
+        <option value="">Semua jenis</option>
+        <option value="IN">Masuk</option>
+        <option value="OUT">Pulang</option>
+      </select>
+      <button id="btnRefresh">Muat ulang</button>
+      <button class="primary" id="btnExport">Unduh CSV</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Foto</th><th>Nama</th><th>ID</th><th>Jenis</th><th>Tanggal</th><th>Jam</th><th>Lokasi</th><th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="emptyMsg" style="display:none;">Belum ada data absensi.</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <img id="modalImg" src="" alt="Foto absen">
+    <div class="close"><button class="icon-btn" id="modalClose">Tutup</button></div>
+  </div>
+</div>
+
+<script>
+/* Ganti dengan URL Web App Google Apps Script yang sama seperti di index.html */
+const API_URL = "PASTE_GOOGLE_APPS_SCRIPT_WEB_APP_URL_DI_SINI";
+
+let pw = sessionStorage.getItem('admin_pw') || '';
+let allRows = [];
+
+const loginGate = document.getElementById('loginGate');
+const dashboard = document.getElementById('dashboard');
+
+async function tryLogin(password){
+  const res = await fetch(API_URL, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ action:'login', password })
+  });
+  const data = await res.json();
+  return data.ok;
+}
+
+document.getElementById('btnLogin').onclick = async () => {
+  const val = document.getElementById('pwInput').value;
+  document.getElementById('loginErr').textContent = 'Memeriksa...';
+  if(API_URL.includes('PASTE_')){
+    document.getElementById('loginErr').textContent = 'API belum dikonfigurasi — lihat README.md.';
+    return;
+  }
+  try{
+    const ok = await tryLogin(val);
+    if(ok){
+      pw = val;
+      sessionStorage.setItem('admin_pw', pw);
+      showDashboard();
+    } else {
+      document.getElementById('loginErr').textContent = 'Kata sandi salah.';
+    }
+  }catch(e){
+    document.getElementById('loginErr').textContent = 'Gagal terhubung ke server.';
+  }
+};
+document.getElementById('btnLogout').onclick = () => {
+  sessionStorage.removeItem('admin_pw'); location.reload();
+};
+
+async function showDashboard(){
+  loginGate.style.display='none';
+  dashboard.style.display='block';
+  await loadData();
+}
+
+async function loadData(){
+  const res = await fetch(API_URL, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ action:'list', password: pw })
+  });
+  const data = await res.json();
+  if(!data.ok){ alert('Sesi admin tidak valid, silakan masuk kembali.'); sessionStorage.removeItem('admin_pw'); location.reload(); return; }
+  allRows = data.rows || [];
+  renderStats();
+  renderTable();
+}
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+function renderStats(){
+  const today = todayStr();
+  const todays = allRows.filter(r => r.date === today);
+  document.getElementById('statToday').textContent = todays.length;
+  document.getElementById('statIn').textContent = todays.filter(r=>r.type==='IN').length;
+  document.getElementById('statOut').textContent = todays.filter(r=>r.type==='OUT').length;
+  document.getElementById('statTotal').textContent = allRows.length;
+}
+
+function renderTable(){
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const fDate = document.getElementById('filterDate').value;
+  const fType = document.getElementById('filterType').value;
+  let rows = [...allRows].reverse();
+  if(q) rows = rows.filter(r => (r.name||'').toLowerCase().includes(q) || (r.empId||'').toLowerCase().includes(q));
+  if(fDate) rows = rows.filter(r => r.date === fDate);
+  if(fType) rows = rows.filter(r => r.type === fType);
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  document.getElementById('emptyMsg').style.display = rows.length ? 'none' : 'block';
+
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.photoUrl ? `<img class="thumb" src="${r.photoUrl}" data-full="${r.photoUrl}">` : '–'}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${escapeHtml(r.empId||'–')}</td>
+      <td><span class="badge ${r.type==='IN'?'in':'out'}">${r.type==='IN'?'Masuk':'Pulang'}</span></td>
+      <td>${r.date}</td>
+      <td><input class="time-input" type="time" value="${r.time}" data-row="${r.rowIndex}"></td>
+      <td>${r.lat ? `<a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank">Lihat peta</a>` : '–'}</td>
+      <td>
+        <button class="icon-btn" data-save="${r.rowIndex}">Simpan</button>
+        <button class="icon-btn danger" data-del="${r.rowIndex}">Hapus</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('img.thumb').forEach(img => {
+    img.onclick = () => { document.getElementById('modalImg').src = img.dataset.full; document.getElementById('modalBg').classList.add('show'); };
+  });
+  tbody.querySelectorAll('[data-save]').forEach(btn => {
+    btn.onclick = async () => {
+      const rowIndex = btn.dataset.save;
+      const input = tbody.querySelector(`input[data-row="${rowIndex}"]`);
+      btn.textContent = 'Menyimpan...';
+      const res = await fetch(API_URL, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({ action:'update', password: pw, rowIndex, time: input.value })
+      });
+      const data = await res.json();
+      btn.textContent = 'Simpan';
+      if(data.ok){ await loadData(); } else { alert('Gagal menyimpan perubahan.'); }
+    };
+  });
+  tbody.querySelectorAll('[data-del]').forEach(btn => {
+    btn.onclick = async () => {
+      if(!confirm('Hapus data absensi ini?')) return;
+      const rowIndex = btn.dataset.del;
+      const res = await fetch(API_URL, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({ action:'delete', password: pw, rowIndex })
+      });
+      const data = await res.json();
+      if(data.ok){ await loadData(); } else { alert('Gagal menghapus data.'); }
+    };
+  });
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('searchBox').oninput = renderTable;
+document.getElementById('filterDate').onchange = renderTable;
+document.getElementById('filterType').onchange = renderTable;
+document.getElementById('btnRefresh').onclick = loadData;
+document.getElementById('modalClose').onclick = () => document.getElementById('modalBg').classList.remove('show');
+document.getElementById('modalBg').onclick = (e) => { if(e.target.id==='modalBg') e.currentTarget.classList.remove('show'); };
+
+document.getElementById('btnExport').onclick = () => {
+  const headers = ['Nama','ID','Jenis','Tanggal','Jam','Latitude','Longitude'];
+  const lines = [headers.join(',')];
+  allRows.forEach(r => {
+    lines.push([r.name, r.empId, r.type, r.date, r.time, r.lat, r.lng].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `absensi_${todayStr()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+};
+
+// Auto-login jika sesi tersimpan
+if(pw && !API_URL.includes('PASTE_')){
+  tryLogin(pw).then(ok => { if(ok) showDashboard(); });
+}
+</script>
+</body>
+</html>

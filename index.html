@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Absensi — Presensi Karyawan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F7F3;
+    --card:#FFFFFF;
+    --ink:#1C2321;
+    --muted:#767F76;
+    --line:#E4E7DF;
+    --forest:#2F5233;
+    --forest-dark:#22401A;
+    --gold:#B8901F;
+    --error:#B3432B;
+    --radius:18px;
+    --shadow:0 1px 2px rgba(28,35,33,.04), 0 8px 24px rgba(28,35,33,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    min-height:100%;
+  }
+  .wrap{
+    max-width:920px;
+    margin:0 auto;
+    padding:32px 20px 64px;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:24px;
+  }
+  @media(min-width:800px){
+    .wrap{grid-template-columns: 1fr 1.15fr; align-items:start; padding-top:56px;}
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:28px;
+  }
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--forest);}
+  .brand span{font-weight:600;letter-spacing:.2px;color:var(--muted);font-size:14px;}
+
+  .clockcard{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:32px 28px;
+    box-shadow:var(--shadow);
+    border:1px solid var(--line);
+  }
+  .clockcard .date{color:var(--muted);font-size:14px;margin-bottom:6px;}
+  .clockcard .time{
+    font-family:'Fraunces',serif;
+    font-size:52px;
+    font-weight:600;
+    line-height:1;
+    letter-spacing:-1px;
+    color:var(--forest-dark);
+  }
+  .clockcard .greet{
+    margin-top:18px;
+    font-size:15px;
+    color:var(--muted);
+    line-height:1.5;
+  }
+  .stat-row{display:flex; gap:16px; margin-top:24px; flex-wrap:wrap;}
+  .stat{
+    flex:1; min-width:110px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    background:#FBFCF9;
+  }
+  .stat .n{font-size:20px;font-weight:700;color:var(--forest-dark);}
+  .stat .l{font-size:12.5px;color:var(--muted);margin-top:2px;}
+
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    border:1px solid var(--line);
+    padding:24px;
+  }
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+  .field input, .field select{
+    width:100%;
+    padding:12px 14px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    font-family:inherit;
+    font-size:15px;
+    background:#FBFCF9;
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--forest); outline-offset:1px; background:#fff;}
+
+  .cam-frame{
+    position:relative;
+    width:100%;
+    aspect-ratio:4/3;
+    background:#101410;
+    border-radius:14px;
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+  .cam-frame video, .cam-frame canvas, .cam-frame img{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .cam-frame canvas, .cam-frame img{display:none;}
+  .cam-hint{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#DDE3DA; font-size:13px; text-align:center; padding:20px; gap:8px; flex-direction:column;
+  }
+  .cam-hint svg{opacity:.7;}
+
+  .btn-row{display:flex; gap:10px;}
+  button{
+    font-family:inherit; font-size:15px; font-weight:600;
+    border:none; border-radius:10px; padding:13px 18px;
+    cursor:pointer; transition:transform .08s ease, opacity .15s ease;
+  }
+  button:active{transform:scale(.98);}
+  .btn-primary{background:var(--forest); color:#fff; flex:1;}
+  .btn-primary:hover{background:var(--forest-dark);}
+  .btn-secondary{background:#EEF1EA; color:var(--ink);}
+  .btn-ghost{background:transparent; color:var(--muted); text-decoration:underline; padding:8px;}
+  button:disabled{opacity:.5; cursor:not-allowed;}
+
+  .type-toggle{display:flex; gap:8px; margin-bottom:16px;}
+  .type-toggle button{
+    flex:1; background:#EEF1EA; color:var(--muted); padding:11px;
+  }
+  .type-toggle button.active{background:var(--forest); color:#fff;}
+
+  .status-line{
+    margin-top:14px; font-size:13.5px; text-align:center; color:var(--muted); min-height:18px;
+  }
+  .status-line.ok{color:var(--forest-dark); font-weight:600;}
+  .status-line.err{color:var(--error); font-weight:600;}
+
+  .toast{
+    position:fixed; left:50%; bottom:28px; transform:translate(-50%,120%);
+    background:var(--ink); color:#fff; padding:14px 20px; border-radius:12px;
+    font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+    transition:transform .3s ease; z-index:50; max-width:90vw; text-align:center;
+  }
+  .toast.show{transform:translate(-50%,0);}
+  .toast.err{background:var(--error);}
+
+  a.admin-link{
+    position:fixed; top:14px; right:16px; font-size:12.5px; color:var(--muted);
+    text-decoration:none; border:1px solid var(--line); padding:6px 12px; border-radius:20px;
+    background:var(--card);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#141713; --card:#1D211C; --ink:#EDEFE8; --muted:#94998F;
+      --line:#2B2F29; --forest:#5C9A5E; --forest-dark:#8FCB8E;
+    }
+    .field input, .field select, .stat{background:#181B16; color:var(--ink);}
+    .type-toggle button{background:#252A22;}
+    .btn-secondary{background:#252A22; color:var(--ink);}
+  }
+</style>
+</head>
+<body>
+
+<a class="admin-link" href="admin.html">Admin</a>
+
+<div class="wrap">
+  <div>
+    <div class="brand"><span class="dot"></span><span>ABSENSI KARYAWAN</span></div>
+    <div class="clockcard">
+      <div class="date" id="dateStr">—</div>
+      <div class="time" id="timeStr">--:--:--</div>
+      <div class="greet" id="greetTxt">Selamat datang. Ambil foto untuk mencatat kehadiranmu hari ini.</div>
+      <div class="stat-row">
+        <div class="stat"><div class="n" id="lastType">–</div><div class="l">Absen terakhir</div></div>
+        <div class="stat"><div class="n" id="lastTime">–</div><div class="l">Jam</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="empName">Nama karyawan</label>
+      <input id="empName" type="text" placeholder="Masukkan nama lengkap" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="empId">ID / NIK (opsional)</label>
+      <input id="empId" type="text" placeholder="Contoh: EMP-014">
+    </div>
+
+    <div class="type-toggle">
+      <button type="button" id="btnIn" class="active">Absen Masuk</button>
+      <button type="button" id="btnOut">Absen Pulang</button>
+    </div>
+
+    <div class="cam-frame" id="camFrame">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+      <img id="shot" alt="Foto absen">
+      <div class="cam-hint" id="camHint">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8a2 2 0 0 1 2-2h1.2a2 2 0 0 0 1.6-.8l.6-.8a2 2 0 0 1 1.6-.8h2a2 2 0 0 1 1.6.8l.6.8a2 2 0 0 0 1.6.8H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        <span>Kamera belum aktif — tekan "Aktifkan kamera"</span>
+      </div>
+    </div>
+
+    <div class="btn-row" id="camControls">
+      <button class="btn-secondary" id="btnCam" style="flex:1">Aktifkan kamera</button>
+      <button class="btn-secondary" id="btnSwitch" title="Ganti kamera">⟳</button>
+    </div>
+    <div class="btn-row" id="shotControls" style="display:none; margin-top:10px;">
+      <button class="btn-secondary" id="btnRetake" style="flex:1">Ambil ulang</button>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn-primary" id="btnSubmit" disabled>Kirim Absen</button>
+    </div>
+    <div class="status-line" id="statusLine"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ====== KONFIGURASI ======
+   Ganti URL di bawah dengan URL Web App dari Google Apps Script kamu
+   (lihat README.md → langkah deployment). */
+const API_URL = "PASTE_GOOGLE_APPS_SCRIPT_WEB_APP_URL_DI_SINI";
+/* ========================= */
+
+const dateStr = document.getElementById('dateStr');
+const timeStr = document.getElementById('timeStr');
+const greetTxt = document.getElementById('greetTxt');
+const lastType = document.getElementById('lastType');
+const lastTime = document.getElementById('lastTime');
+
+function tick(){
+  const now = new Date();
+  dateStr.textContent = now.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  timeStr.textContent = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const h = now.getHours();
+  greetTxt.textContent = h < 11 ? "Selamat pagi! Ambil foto untuk mencatat kehadiranmu."
+                        : h < 15 ? "Selamat siang! Ambil foto untuk mencatat kehadiranmu."
+                        : h < 18 ? "Selamat sore! Jangan lupa absen pulang."
+                        : "Selamat malam! Jangan lupa absen pulang.";
+}
+tick(); setInterval(tick, 1000);
+
+// Ingat nama & terakhir absen dari perangkat ini
+const savedName = localStorage.getItem('absen_name');
+const savedId = localStorage.getItem('absen_id');
+if(savedName) document.getElementById('empName').value = savedName;
+if(savedId) document.getElementById('empId').value = savedId;
+const savedLast = JSON.parse(localStorage.getItem('absen_last') || 'null');
+if(savedLast){
+  lastType.textContent = savedLast.type === 'IN' ? 'Masuk' : 'Pulang';
+  lastTime.textContent = savedLast.time;
+}
+
+// Toggle jenis absen
+let attType = 'IN';
+const btnIn = document.getElementById('btnIn');
+const btnOut = document.getElementById('btnOut');
+btnIn.onclick = () => { attType='IN'; btnIn.classList.add('active'); btnOut.classList.remove('active'); };
+btnOut.onclick = () => { attType='OUT'; btnOut.classList.add('active'); btnIn.classList.remove('active'); };
+
+// Kamera
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const shot = document.getElementById('shot');
+const camHint = document.getElementById('camHint');
+const btnCam = document.getElementById('btnCam');
+const btnSwitch = document.getElementById('btnSwitch');
+const btnRetake = document.getElementById('btnRetake');
+const btnSubmit = document.getElementById('btnSubmit');
+const camControls = document.getElementById('camControls');
+const shotControls = document.getElementById('shotControls');
+const statusLine = document.getElementById('statusLine');
+
+let stream = null;
+let facing = 'user';
+let photoDataUrl = null;
+
+async function startCamera(){
+  stopCamera();
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode: facing }, audio:false });
+    video.srcObject = stream;
+    video.style.display = 'block';
+    camHint.style.display = 'none';
+    shot.style.display = 'none';
+    canvas.style.display = 'none';
+    btnCam.textContent = 'Kamera aktif';
+    setStatus('');
+  }catch(err){
+    setStatus('Tidak bisa mengakses kamera. Periksa izin kamera di browser.', 'err');
+  }
+}
+function stopCamera(){
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+}
+btnCam.onclick = startCamera;
+btnSwitch.onclick = () => { facing = facing==='user' ? 'environment' : 'user'; if(stream) startCamera(); };
+
+document.getElementById('camFrame').addEventListener('click', () => {
+  if(stream && shot.style.display !== 'block') capture();
+});
+
+function capture(){
+  if(!stream) return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  photoDataUrl = canvas.toDataURL('image/jpeg', 0.72);
+  shot.src = photoDataUrl;
+  shot.style.display = 'block';
+  video.style.display = 'none';
+  camControls.style.display = 'none';
+  shotControls.style.display = 'flex';
+  btnSubmit.disabled = false;
+  stopCamera();
+}
+btnRetake.onclick = () => {
+  photoDataUrl = null;
+  shot.style.display='none';
+  camControls.style.display='flex';
+  shotControls.style.display='none';
+  btnSubmit.disabled = true;
+  startCamera();
+};
+
+function setStatus(msg, cls){
+  statusLine.textContent = msg;
+  statusLine.className = 'status-line' + (cls ? ' '+cls : '');
+}
+function showToast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  setTimeout(()=> t.className = 'toast', 3200);
+}
+
+function getLocation(){
+  return new Promise((resolve) => {
+    if(!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({lat:pos.coords.latitude, lng:pos.coords.longitude}),
+      () => resolve(null),
+      {timeout:4000}
+    );
+  });
+}
+
+btnSubmit.onclick = async () => {
+  const name = document.getElementById('empName').value.trim();
+  const empId = document.getElementById('empId').value.trim();
+  if(!name){ setStatus('Nama wajib diisi.', 'err'); return; }
+  if(!photoDataUrl){ setStatus('Ambil foto terlebih dahulu.', 'err'); return; }
+  if(API_URL.includes('PASTE_')){ setStatus('API belum dikonfigurasi — lihat README.md.', 'err'); return; }
+
+  btnSubmit.disabled = true;
+  btnSubmit.textContent = 'Mengirim...';
+  setStatus('Mengirim data absensi...');
+
+  const loc = await getLocation();
+  const payload = {
+    action: 'checkin',
+    name, empId,
+    type: attType,
+    photo: photoDataUrl,
+    lat: loc ? loc.lat : '',
+    lng: loc ? loc.lng : '',
+    device: navigator.userAgent
+  };
+
+  try{
+    const res = await fetch(API_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(data.ok){
+      localStorage.setItem('absen_name', name);
+      localStorage.setItem('absen_id', empId);
+      const now = new Date();
+      const t = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+      localStorage.setItem('absen_last', JSON.stringify({type:attType, time:t}));
+      lastType.textContent = attType === 'IN' ? 'Masuk' : 'Pulang';
+      lastTime.textContent = t;
+      showToast('Absen ' + (attType==='IN'?'masuk':'pulang') + ' berhasil dicatat ✓');
+      setStatus('Berhasil dikirim.', 'ok');
+      resetForm();
+    } else {
+      throw new Error(data.error || 'Gagal menyimpan');
+    }
+  }catch(err){
+    showToast('Gagal mengirim absen. Coba lagi.', true);
+    setStatus('Gagal: ' + err.message, 'err');
+  }
+  btnSubmit.disabled = false;
+  btnSubmit.textContent = 'Kirim Absen';
+};
+
+function resetForm(){
+  photoDataUrl = null;
+  shot.style.display='none';
+  camControls.style.display='flex';
+  shotControls.style.display='none';
+  camHint.style.display='flex';
+  btnCam.textContent='Aktifkan kamera';
+  btnSubmit.disabled = true;
+}
+</script>
+</body>
+</html>
